@@ -17,8 +17,9 @@ aa.env.setValue("lookAheadDays","-35");
 */
 /*------------------------------------------------------------------------------------------------------/
 | Program: Renewal Penalties
-| Client:
+| Client: City of Lancaster, CA
 |
+| Notes: 03/19/2019 - SLS - Updated calculateRenewalPenaltyFee function to assess specific fees for Rental Housing Renewals. 
 |
 /------------------------------------------------------------------------------------------------------*/
 /*------------------------------------------------------------------------------------------------------/
@@ -282,7 +283,7 @@ function calculateRenewalPenaltyFee(renewalCapId, b1ExpDate, licCapId) {
 	baseFees["Taxi Owner"] = "TXIB030";
 	baseFees["Vehicle For Hire Owner"] = "TXIB030";
 	baseFees["Tow Owner"] = "TOWBR030";
-	baseFees["Rental Housing"] = "RNTH050";
+	baseFees["Rental Housing"] = "RNTHR050";
 
 	licenseFees = new Array();
 	licenseFees["General"] = "GENR010";		// qty is ASI "# of People Working in Lancaster"
@@ -362,7 +363,7 @@ function calculateRenewalPenaltyFee(renewalCapId, b1ExpDate, licCapId) {
 			logDebug("License type = " + licType);
 			penalizedAmount = 0;
 			if (matches(licType, "Rental Housing", "Taxi Owner", "Vehicle For Hire Owner", "Tow Owner")) {
-				refFeeItem = getFeeDefByCode(feeSchedule, baseFees[licType]);
+				refFeeItem = getFeeDefByCode(feeSchedule, baseFees[licType]); 	//logDebug("refFeeItem: "+refFeeItem);
 				penalizedAmount = parseFloat(refFeeItem.formula);
 			}
 			else {
@@ -397,10 +398,18 @@ function calculateRenewalPenaltyFee(renewalCapId, b1ExpDate, licCapId) {
 					if (SBFees[licType]) addFee(SBFees[licType], feeSchedule, "FINAL", 1, "N", renewalCapId); 
 
 					if (!nonProfit && penalizedAmount > 0) {
-						if(monthsLate >= (loopIndex + 2) ) addFee("BLPN010","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); // 20%
-						if(monthsLate >= (loopIndex + 3) ) addFee("BLPN020","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); // 30%
-						if(monthsLate >= (loopIndex + 4) ) addFee("BLPN030","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); // 40%
-						if(monthsLate >= (loopIndex + 5) ) addFee("BLPN040","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); // 50%
+						if (matches(licType, "Rental Housing")){
+							if(monthsLate >= (loopIndex + 2) ) {addFee("RHP010","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("20%");}// 20%						
+							if(monthsLate >= (loopIndex + 3) ) {addFee("RHP020","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("30%");}// 30%
+							if(monthsLate >= (loopIndex + 4) ) {addFee("RHP030","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("40%");}// 40%
+							if(monthsLate >= (loopIndex + 5) ) {addFee("RHP040","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("50%");}// 50% 
+						
+						}else{
+							if(monthsLate >= (loopIndex + 2) ) {addFee("BLPN010","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("20%");}// 20%
+							if(monthsLate >= (loopIndex + 3) ) {addFee("BLPN020","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("30%");}// 30%
+							if(monthsLate >= (loopIndex + 4) ) {addFee("BLPN030","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("40%");}// 40%
+							if(monthsLate >= (loopIndex + 5) ) {addFee("BLPN040","BL_PENALTY","FINAL",penalizedAmount,"N", renewalCapId); logDebug("50%");}// 50%
+						}
 					}	
 					loopIndex += 12;
 				}
@@ -410,6 +419,7 @@ function calculateRenewalPenaltyFee(renewalCapId, b1ExpDate, licCapId) {
 	} 
 	catch (err) { logDebug("Error calculating penalty fee : " + err); }
 }
+
 
 function addFeeOnRenewalFromASIOnLicense(ASIField, FeeCode, renewalCapId, licenseCapId) {
 	var tmpASIQty = parseFloat("0" + getAppSpecific(ASIField, licenseCapId))
